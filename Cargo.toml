@@ -1,0 +1,29 @@
+[package]
+name = "fixed-math-taylor"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jorge Andre Castro <georgeandrec@gmail.com>"]
+license = "GPL-2.0-or-later"
+description = "A lightweight fixed-point math library providing Taylor series and LUT approximations for no_std."
+repository = "https://github.com/jorgeandrecastro/fixed-math-taylor"
+documentation = "https://docs.rs/fixed-math-taylor"
+readme = "Readme.md"
+
+[features]
+# Par défaut, on ne compile rien pour forcer un choix explicite ou rester minimal
+default = []
+
+# Choise 
+taylor = []   # Active l'approximation par série de Taylor
+lut = []      # Active la table de recherche (Look-Up Table)
+fast-sin = [] # Active une version ultra-rapide (approximation quadratique)
+
+# Support pour les types
+f32 = []      # Optimisations spécifiques pour f32 (ex: RP2040)
+
+[profile.release]
+opt-level = "z"      # Taille minimale
+lto = true           # Optimisation au lien
+codegen-units = 1    
+panic = "abort"      # Indispensable en no_std
+strip = true         # Nettoyage des symboles
