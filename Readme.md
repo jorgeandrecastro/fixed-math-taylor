@@ -1,88 +1,103 @@
-Fixed-Math-Taylor
+Fixed-Math-Taylor (v0.2.0)
 
-Fixed-Math-Taylor is an ultra-optimized trigonometry library for embedded systems (no_std). It provides multiple calculation engines (LUT, Taylor, Bhaskara) configurable via Cargo features.
+The major change is that all f32 references have been removed from the calculation engines. Everything now works in Angle (u16) and Fixed (i16), making the library fully consistent with its name: Fixed-Math.
 
-Designed for the RP2040 and architectures without an FPU, it prioritizes speed and predictability.
+Fixed-Math-Taylor is a 100% fixed-point, ultra-optimized trigonometry library for embedded systems (no_std).
 
-🚀 Available Engines
-| Feature  | Method                  | Type | Precision | Ideal Use                       |
-| -------- | ----------------------- | ---- | --------- | ------------------------------- |
-| lut      | Q15 Lookup Table        | i16  | ~0.1%     | Motor control, Audio, Real-time |
-| taylor   | Taylor Series (Order 9) | f32  | High      | Scientific calculations         |
-| fast-sin | Quadratic Approximation | f32  | Medium    | Animation, Simple graphics      |
+Designed specifically for the RP2040 and microcontrollers without an FPU, it eliminates the cost of software emulation of f32 by using only integers and bit shifts.
 
+🚀 Calculation Engines (Features)
+
+All engines now use Angle (u16) for input and Fixed (i16, Q15) for output.
+
+Feature	Method	Calculation Type	Precision	Ideal Use
+lut	Lookup Table + Interpolation	Integer (Q15)	~0.1%	Reference: Audio, Motor Control
+taylor	Taylor Series (Order 5)	Integer (Q15)	High	Pure algorithmic computations without LUT
+fast-sin	Bhaskara I Approximation	Integer (Q15)	Medium	Animation, fast graphical calculations
 🛠 Installation
 
-Add this to your Cargo.toml and choose your engine:
+Add this to your Cargo.toml:
 
 [dependencies]
 fixed-math-taylor = { git = "https://github.com/jorgeandrecastro/fixed-math-taylor", features = ["lut"] }
-"fast-sin" or "taylor"
 
-📖 Usage Example (Q15 LUT Mode)
+You can also choose "fast-sin" or "taylor" as features.
 
-The lut mode is the fastest. It uses strong typing to prevent unit errors.
+📖 Usage
 
-use fixed_math_taylor::{sin_fixed, cos, Angle, to_fixed, from_fixed};
+The library uses strong typing to guarantee performance.
+
+use fixed_math_taylor::{sin_fixed, cos, Angle, Fixed};
 
 fn main() {
-    // 0 = 0 rad, 16384 = PI/2, 65535 = ~2*PI
+    // Scale: 0 = 0 rad, 16384 = PI/2, 65535 = ~2*PI
     let angle: Angle = 16384; 
 
-    let s = sin_fixed(angle); // Returns 32767 (1.0 in Q15)
-    let c = cos(angle);       // Returns 0
+    // All engines return an i16 (Q15)
+    // 32767 represents 1.0
+    let s = sin_fixed(angle);         // LUT engine
+    let c = cos(angle);               // LUT engine
+    
+    #[cfg(feature = "taylor")]
+    let s_t = taylor_impl::sin_taylor(angle);
 }
-🔬 LUT Implementation Details
+🔬 Technical Details
+Q15 Format
 
-The implementation relies on quadrant symmetry to minimize memory footprint:
+Output is in Q15: values range from -32768 to 32767.
+To get the real value:
 
-Storage: Only the first quadrant (0 to π/2) is stored (257 points).
+real_value_f32 = (fixed_value as f32) / 32767.0
+LUT Implementation
+Memory Optimization: Uses quadrant symmetry. Only the first quadrant (0 to π/2) is stored (257 points).
+Interpolation: Linear interpolation between table points ensures high precision without increasing Flash footprint.
+Stability: At 45° the returned value is 23203 (~0.7081). This design choice guarantees stable and predictable PID/control loop responses.
+Taylor & Bhaskara
 
-Interpolation: Linear interpolation between table points ensures smooth transitions.
-Precision: At 45° (index 128), the value is 23203 (~0.7081). This slight deviation from the ideal sine (0.7071) is a deliberate design choice based on the table used, providing  stability for PI/PID control loops.
+Rewritten entirely using integer arithmetic. They use temporary 64-bit registers for intermediate calculations to prevent overflow while maintaining the speed of a 32-bit processor.
 
-🧪 Tests and Validation
+🧪 Validation
 
-The library is fully tested to guarantee robustness of wrapping (periodicity) and accuracy of conversions.
+The library is fully validated with unit tests covering mathematical precision and correct quadrant handling.
 
-# To test all engines
 cargo test --all-features
 ⚖️ License
 
 Copyright © 2026 Jorge Andre Castro.
 
-This software is distributed under the GNU General Public License (GPL) version 2 or later. This ensures that the code remains free and any improvements contributed by the community benefit everyone.
-
+This software is distributed under the GNU General Public License (GPL) version 2 or later. All derivative code must remain free and open.
 
 
 French Version 
 
-Fixed-Math-TaylorFixed-Math-Taylor est une bibliothèque de trigonométrie ultra-optimisée pour les systèmes embarqués (no_std).
- Elle propose plusieurs moteurs de calcul (LUT, Taylor, Bhaskara) configurables via des Cargo features.Conçue pour le RP2040 et les architectures sans FPU, elle privilégie la vitesse et la prédictibilité.
- 
- 🚀 Moteurs disponiblesFeatureMéthodeTypePrécisionUsage idéallutTable de recherche Q15i16~0.1%Contrôle moteur, Audio, Temps-réeltaylorSérie de Taylor (Ordre 9)f32HauteCalculs scientifiquesfast-sinApproximation quadratiquef32MoyenneAnimation, Graphismes simples
- 
- 
- 🛠 InstallationAjoute ceci à ton Cargo.toml en choisissant ton moteur :Ini, TOML[dependencies]
+Le changement majeur est que nous avons supprimé toute mention de f32 dans les moteurs de calcul. Désormais, tout fonctionne en Angle (u16) et Fixed (i16), ce qui rend la bibliothèque cohérente avec son nom : Fixed-Math.Fixed-Math-Taylor (v0.2.0)
+
+Fixed-Math-Taylor est une bibliothèque de trigonométrie 100% virgule fixe ultra-optimisée pour les systèmes embarqués (no_std).Conçue spécifiquement pour le RP2040 et les microcontrôleurs sans unité de calcul flottant (FPU), elle élimine le coût de l'émulation logicielle des f32 en utilisant exclusivement des entiers et des décalages de bits.
+
+🚀 Moteurs de calcul (Features)Tous les moteurs utilisent désormais le type Angle (u16) pour l'entrée et Fixed (i16 Q15) pour la sortie.FeatureMéthodeType de calculPrécisionUsage idéallutTable de recherche + InterpolationEntier (Q15)~0.1%Référence : Audio, Contrôle moteurtaylorSérie de Taylor (Ordre 5)Entier (Q15)HauteAlgorithmique pure sans tablefast-sinApproximation de Bhaskara IEntier (Q15)MoyenneAnimation, calculs graphiques rapides🛠 InstallationAjoutez ceci à votre Cargo.toml :Ini, TOML[dependencies]
 fixed-math-taylor = { git = "https://github.com/jorgeandrecastro/fixed-math-taylor", features = ["lut"] }
-ou "fast-sin" ou  "taylor"
 
+"fast-sin" or "taylor"
 
-📖 Exemple d'utilisation (Mode LUT Q15)Le mode lut est le plus performant. Il utilise un typage fort pour éviter les erreurs d'unités.Rustuse fixed_math_taylor::{sin_fixed, cos, Angle, to_fixed, from_fixed};
+📖 UtilisationLa bibliothèque utilise un typage fort pour garantir la performance.Rustuse fixed_math_taylor::{sin_fixed, cos, Angle, Fixed};
 
 fn main() {
-    // 0 = 0 rad, 16384 = PI/2, 65535 = ~2*PI
+    // Échelle : 0 = 0 rad, 16384 = PI/2, 65535 = ~2*PI
     let angle: Angle = 16384; 
 
-    let s = sin_fixed(angle); // Retourne 32767 (1.0 en Q15)
-    let c = cos(angle);       // Retourne 0
+    // Tous les moteurs retournent un i16 (Q15)
+    // 32767 représente 1.0
+    let s = sin_fixed(angle);         // Moteur LUT
+    let c = cos(angle);               // Moteur LUT
+    
+    #[cfg(feature = "taylor")]
+    let s_t = taylor_impl::sin_taylor(angle);
 }
+🔬 Détails TechniquesFormat Q15La sortie est au format Q15 : les valeurs sont comprises entre -32768 et 32767.Pour obtenir la valeur réelle : valeur_f32 = (valeur_fixe as f32) / 32767.0.Implémentation LUTOptimisation mémoire : Utilise la symétrie des quadrants. Seul le premier quadrant (0 à $\pi/2$) est stocké (257 points).
 
-🔬 Détails de l'implémentation LUTL'implémentation repose sur une symétrie de quadrant pour minimiser l'empreinte mémoire :Stockage : Seul le premier quadrant ($0$ à $\pi/2$) est stocké (257 points).
-Interpolation : Une interpolation linéaire entre les points de la table garantit une transition fluide.Précision : À $45^\circ$ (index 128), la valeur est de 23203 (soit ~0.7081). Cette légère divergence par rapport au sinus idéal ($0.7071$) est un choix de conception lié à la table de données utilisée, offrant une excellente stabilité pour les boucles de contrôle PI/PID.
+Interpolation : Une interpolation linéaire est effectuée entre les points de la table pour une précision accrue sans augmenter l'empreinte Flash.Stabilité : À $45^\circ$, la valeur renvoyée est 23203 (~0.7081). Ce choix de conception assure une réponse stable et prédictible pour les boucles de régulation (PID)
+.Taylor & BhaskaraRéécrits intégralement en arithmétique entière. Ils utilisent des registres 64 bits de manière temporaire pour les calculs intermédiaires afin d'éviter tout dépassement de capacité (overflow) tout en conservant la vitesse d'un processeur 32 bits.
 
-🧪 Tests et ValidationLa bibliothèque est intégralement testée pour garantir la robustesse du "wrapping" (périodicité) et la précision des conversions.Bash# Pour tester tous les moteurs
-cargo test --all-features
+🧪 ValidationLa bibliothèque est validée par une suite de tests unitaires couvrant la précision mathématique et la gestion des signes par quadrant.Bashcargo test --all-features
 
-
-⚖️ LicenceCopyright © 2026 Jorge Andre Castro.Ce logiciel est distribué sous la Licence Publique Générale GNU (GPL) version 2.0 ou ultérieure. Cela garantit que le code reste libre et que toute amélioration apportée par la communauté profite à tous.
+⚖️ LicenceCopyright © 2026 Jorge Andre Castro.Ce logiciel est distribué sous la Licence Publique Générale GNU (GPL) version 2.0 ou ultérieure. Tout code dérivé doit rester libre et ouvert.

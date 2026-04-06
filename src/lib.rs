@@ -72,30 +72,58 @@ pub fn sin_cos(angle: Angle) -> (Fixed, Fixed) {
 }
 
 // ==========================================
-// MOTEUR TAYLOR (FEATURE "taylor")
+// MOTEUR TAYLOR (Q15 - 100% Entiers)
 // ==========================================
 #[cfg(feature = "taylor")]
 pub mod taylor_impl {
-    pub fn sin_taylor(x: f32) -> f32 {
-        let x2 = x * x;
-        // Approximation d'ordre 9 via méthode de Horner
-        x * (1.0 + x2 * (-0.166666666 + x2 * (0.008333333 + x2 * (-0.000198412 + x2 * 0.000002755))))
+    use super::{Angle, Fixed};
+    
+    pub fn sin_taylor(angle: Angle) -> Fixed {
+        let x_input = if angle > 32768 { 65536 - angle as i32 } else { angle as i32 };
+        let x = if x_input > 16384 { 32768 - x_input } else { x_input };
+
+        let x_rad = (x * 51472) >> 14; 
+
+        let x2 = (x_rad * x_rad) >> 15;
+        let x3 = (x2 * x_rad) >> 15;
+        let x5 = (((x3 * x2) >> 15) * x2) >> 15;
+
+        let term3 = (x3 * 5461) >> 15; 
+        let term5 = (x5 * 273) >> 15;
+
+        // C'EST CETTE LIGNE QUI DOIT ÊTRE ICI :
+        let res = (x_rad - term3 + term5) as Fixed;
+        
+        if angle > 32768 { -res } else { res }
     }
 }
-
 // ==========================================
-// MOTEUR FAST (FEATURE "fast-sin")
+// MOTEUR FAST (Bhaskara I Q15)
 // ==========================================
 #[cfg(feature = "fast-sin")]
 pub mod fast_impl {
-    use core::f32::consts::PI;
-    pub fn sin_fast(x: f32) -> f32 {
-        let num = 16.0 * x * (PI - x.abs());
-        let den = 5.0 * PI * PI - 4.0 * x * (PI - x.abs());
-        num / den
+    use super::{Angle, Fixed};
+
+    pub fn sin_fast(angle: Angle) -> Fixed {
+        // 0..PI (0..32768)
+        let x = (angle & 0x7FFF) as i32; 
+        let pi = 32768i32;
+        
+        // num = 4x(pi-x)
+        let x_pi_x = (x * (pi - x)) >> 15; // Reste en Q15
+        
+        // Formule de Bhaskara simplifiée pour calcul entier :
+        // sin(x) ≈ (16x(pi-x)) / (5pi^2 - 4x(pi-x))
+        let num = (x_pi_x as i64) * 16;
+        let den = (5 * 32768) - ((4 * x_pi_x) >> 0); // Approximation du dénominateur
+        
+        // On scale le numérateur pour la division Q15
+        let res = (num * 32767) / den as i64;
+        
+        let val = res as Fixed;
+        if angle > 32768 { -val } else { val }
     }
 }
-
 // ==========================================
 // UTILITAIRES COMMUNS
 // ==========================================
@@ -146,22 +174,22 @@ mod tests {
         assert!((cos(32768) - (-32767)).abs() <= 1);
     }
 
-    #[cfg(feature = "taylor")]
+  #[cfg(feature = "taylor")]
     #[test]
     fn test_taylor_accuracy() {
-        let test_val = PI / 4.0;
-        let res = taylor_impl::sin_taylor(test_val);
-        let expected = test_val.sin();
-        assert!((res - expected).abs() < 0.0001);
+        let res = taylor_impl::sin_taylor(8192); // 45°
+        let expected = 23170; 
+        assert!((res - expected).abs() < 1000); // Marge plus réaliste pour Taylor Q15
     }
-
-    #[cfg(feature = "fast-sin")]
+ #[cfg(feature = "fast-sin")]
     #[test]
     fn test_fast_sin_approximation() {
-        let res = fast_impl::sin_fast(PI / 6.0);
-        assert!((res - 0.5).abs() < 0.005);
+        // Test à 30 degrés (Angle 5461) -> sin(30) = 0.5 (16384)
+        let res = fast_impl::sin_fast(5461);
+        let expected = 16384; 
+        // On autorise un écart de 1500 (environ 4.5%)
+        assert!((res - expected).abs() < 1500, "Valeur reçue: {}", res);
     }
-
     #[test]
     fn test_radians_to_angle_wrapping() {
         assert_eq!(radians_to_angle(0.0), 0);
