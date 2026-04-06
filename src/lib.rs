@@ -61,16 +61,15 @@ pub use lut_impl::sin_fixed;
 
 #[cfg(feature = "lut")]
 #[inline(always)]
-pub fn cos(angle: Angle) -> Fixed {
+pub fn cos_fixed(angle: Angle) -> Fixed {
     sin_fixed(angle.wrapping_add(16384))
 }
 
 #[cfg(feature = "lut")]
 #[inline(always)]
 pub fn sin_cos(angle: Angle) -> (Fixed, Fixed) {
-    (sin_fixed(angle), cos(angle))
+    (sin_fixed(angle), cos_fixed(angle))
 }
-
 // ==========================================
 // MOTEUR TAYLOR (Q15 - 100% Entiers)
 // ==========================================
@@ -96,7 +95,16 @@ pub mod taylor_impl {
         
         if angle > 32768 { -res } else { res }
     }
+
+    pub fn cos_taylor(angle: super::Angle) -> super::Fixed {
+        sin_taylor(angle.wrapping_add(16384))
+    }
+
+    
+
 }
+
+
 // ==========================================
 // MOTEUR FAST (Bhaskara I Q15)
 // ==========================================
@@ -123,7 +131,15 @@ pub mod fast_impl {
         let val = res as Fixed;
         if angle > 32768 { -val } else { val }
     }
+
+    pub fn cos_fast(angle: super::Angle) -> super::Fixed {
+        sin_fast(angle.wrapping_add(16384))
+    }
+
+ 
 }
+
+
 // ==========================================
 // UTILITAIRES COMMUNS
 // ==========================================
@@ -149,7 +165,7 @@ mod tests {
     use super::*;
     use core::f32::consts::PI;
 
-   #[cfg(feature = "lut")]
+    #[cfg(feature = "lut")]
     #[test]
     fn test_sin_fixed_precision() {
         // Points cardinaux : Précision exacte (tolérance 1 bit)
@@ -158,43 +174,41 @@ mod tests {
         assert!((sin_fixed(32768) - 0).abs() <= 1);     // PI (0.0)
         assert!((sin_fixed(49152) - (-32767)).abs() <= 1); // 3PI/2 (-1.0)
 
-        // Test à 45° (Angle 8192 = Index 128 dans une table de 256 pts)
-        // Dans ta table, SIN_LUT[128] est exactement 23203.
+        // Test à 45°
         let res_raw = sin_fixed(8192); 
         let expected_raw = 23203; 
-        
         assert_eq!(res_raw, expected_raw, "Erreur de précision à 45°");
     }
 
     #[cfg(feature = "lut")]
     #[test]
     fn test_cos_fixed() {
-        assert!((cos(0) - 32767).abs() <= 1);
-        assert!(cos(16384).abs() <= 1);
-        assert!((cos(32768) - (-32767)).abs() <= 1);
+        // CORRECTION : Appel de cos_fixed au lieu de cos
+        assert!((cos_fixed(0) - 32767).abs() <= 1);
+        assert!(cos_fixed(16384).abs() <= 1);
+        assert!((cos_fixed(32768) - (-32767)).abs() <= 1);
     }
 
-  #[cfg(feature = "taylor")]
+    #[cfg(feature = "taylor")]
     #[test]
     fn test_taylor_accuracy() {
         let res = taylor_impl::sin_taylor(8192); // 45°
         let expected = 23170; 
-        assert!((res - expected).abs() < 1000); // Marge plus réaliste pour Taylor Q15
+        assert!((res - expected).abs() < 1000); 
     }
- #[cfg(feature = "fast-sin")]
+
+    #[cfg(feature = "fast-sin")]
     #[test]
     fn test_fast_sin_approximation() {
-        // Test à 30 degrés (Angle 5461) -> sin(30) = 0.5 (16384)
-        let res = fast_impl::sin_fast(5461);
+        let res = fast_impl::sin_fast(5461); // 30°
         let expected = 16384; 
-        // On autorise un écart de 1500 (environ 4.5%)
-        assert!((res - expected).abs() < 1500, "Valeur reçue: {}", res);
+        assert!((res - expected).abs() < 1500);
     }
+
     #[test]
     fn test_radians_to_angle_wrapping() {
         assert_eq!(radians_to_angle(0.0), 0);
         assert_eq!(radians_to_angle(2.0 * PI), 0);
-        // Utilisation de la tolérance pour f32
         let a = radians_to_angle(-PI / 2.0);
         assert!(a == 49152 || a == 49151); 
     }
@@ -214,6 +228,28 @@ mod tests {
             let (s, c) = sin_cos(0);
             assert_eq!(s, 0);
             assert_eq!(c, 32767);
+        }
+    }
+
+    #[test]
+    fn test_cos_consistency() {
+        let angle_45 = 8192; 
+        
+        #[cfg(feature = "lut")]
+        assert!((cos_fixed(0) - 32767).abs() <= 1);
+
+        #[cfg(feature = "taylor")]
+        {
+            // CORRECTION : S'assure que cos_taylor est bien appelé
+            let res = taylor_impl::cos_taylor(angle_45);
+            assert!((res - 23170).abs() < 1000);
+        }
+
+        #[cfg(feature = "fast-sin")]
+        {
+            // CORRECTION : S'assure que cos_fast est bien appelé
+            let res = fast_impl::cos_fast(0);
+            assert!((res - 32767).abs() < 1500);
         }
     }
 }
