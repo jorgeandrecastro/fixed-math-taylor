@@ -528,7 +528,7 @@ mod tests {
 
     #[test]
     fn test_cos_consistency() {
-        let angle_45 = 8192;
+        let _angle_45 = 8192;
 
         #[cfg(feature = "lut")]
         assert!((cos_fixed(0) - 32767).abs() <= 1);
