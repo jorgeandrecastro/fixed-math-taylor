@@ -4,10 +4,12 @@ version = "0.3.0"
 edition = "2021"
 authors = ["Jorge Andre Castro <georgeandrec@gmail.com>"]
 license = "GPL-2.0-or-later"
-description = "A lightweight fixed-point math library providing Taylor series and LUT approximations for no_std."
+description = "High-performance fixed-point trigonometry library optimized for microcontrollers without FPU. 100% no_std."
 repository = "https://github.com/jorgeandrecastro/fixed-math-taylor"
 documentation = "https://docs.rs/fixed-math-taylor"
-readme = "Readme.md"
+readme = "README.md"
+keywords = ["fixed-point", "trigonometry", "sin", "cos", "embedded", "no_std", "RP2040"]
+categories = ["embedded", "mathematics", "no-std"]
 
 [features]
 # Par défaut, on ne compile rien pour forcer un choix explicite ou rester minimal

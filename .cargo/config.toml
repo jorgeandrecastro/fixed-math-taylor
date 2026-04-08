@@ -1,0 +1,10 @@
+# Cargo configuration for Fixed-Math-Taylor
+
+[alias]
+# Useful development aliases
+doc-serve = "doc --no-deps --all-features --open"
+publish-check = "publish --dry-run"
+
+[net]
+# Improve build times slightly
+git-fetch-with-cli = true
