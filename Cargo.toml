@@ -8,8 +8,8 @@ description = "High-performance fixed-point trigonometry library optimized for m
 repository = "https://github.com/jorgeandrecastro/fixed-math-taylor"
 documentation = "https://docs.rs/fixed-math-taylor"
 readme = "README.md"
-keywords = ["fixed-point", "trigonometry", "sin", "cos", "embedded", "no_std", "RP2040"]
-categories = ["embedded", "mathematics", "no-std"]
+keywords = ["fixed-point", "trigonometry"]
+categories = [ "mathematics", "no-std"]
 
 [features]
 # Par défaut, on ne compile rien pour forcer un choix explicite ou rester minimal
