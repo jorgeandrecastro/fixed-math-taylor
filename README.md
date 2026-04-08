@@ -6,6 +6,8 @@
 
 A lightweight, zero-dependency fixed-point trigonometry library optimized for embedded systems and microcontrollers without a floating-point unit (FPU).
 
+⚠️ Security Note (v0.3.4)IMPORTANT: Please do not use versions prior to 0.3.4.Earlier versions contained an integer overflow bug in the Taylor engine when approaching 90° ($PI/2$).Fixed in v0.3.4:Internal calculations upgraded to i64 to prevent overflows.Added Arithmetic Saturation (clamping) to ensure results stay within [-32767, 32767].Verified on RP2350(Raspberry Pi Pico 2) hardware.
+
 ## Overview
 
 Fixed-Math-Taylor eliminates the computational overhead of software floating-point emulation on resource-constrained devices by implementing trigonometric functions using **pure integer arithmetic** and **bit shifts**. Designed specifically for the RP2040 and similar microcontrollers, it delivers production-ready performance with multiple calculation engines to suit different use cases.
