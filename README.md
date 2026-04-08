@@ -23,7 +23,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-fixed-math-taylor = { version = "0.3.1", features = ["lut"] }
+fixed-math-taylor = { version = "0.3.3", features = ["lut"] }
 ```
 
 Choose one calculation engine via features:

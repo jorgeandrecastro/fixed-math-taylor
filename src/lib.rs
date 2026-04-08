@@ -293,10 +293,8 @@ pub mod taylor_impl {
             x_input
         };
 
-        // On passe en i64 pour ne pas déborder lors de la multiplication
+        // Calculs en i64 pour la précision
         let x_rad = ((x as i64 * 51472) >> 14) as i32;
-
-        // le passage par i64 est vital
         let x2 = ((x_rad as i64 * x_rad as i64) >> 15) as i32;
         let x3 = ((x2 as i64 * x_rad as i64) >> 15) as i32;
         let x5 = ((((x3 as i64 * x2 as i64) >> 15) as i64 * x2 as i64) >> 15) as i32;
@@ -304,12 +302,21 @@ pub mod taylor_impl {
         let term3 = ((x3 as i64 * 5461) >> 15) as i32;
         let term5 = ((x5 as i64 * 273) >> 15) as i32;
 
-        let res = (x_rad - term3 + term5) as Fixed;
-        if angle > 32768 {
-            -res
+        // --- SÉCURITÉ DE SATURATION ---
+        let res_full = x_rad - term3 + term5;
+        
+        // Si ça dépasse 1.0 (32767), on bloque au max au lieu de laisser l'i16 boucler
+        let res_clamped = if res_full > 32767 {
+            32767
+        } else if res_full < -32767 {
+            -32767
         } else {
-            res
-        }
+            res_full
+        };
+
+        let res = res_clamped as Fixed;
+        
+        if angle > 32768 { -res } else { res }
     }
 
     /// Computes cosine using the identity cos(x) = sin(x + π/2).
