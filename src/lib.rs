@@ -293,18 +293,18 @@ pub mod taylor_impl {
             x_input
         };
 
-        let x_rad = (x * 51472) >> 14;
+        // On passe en i64 pour ne pas déborder lors de la multiplication
+        let x_rad = ((x as i64 * 51472) >> 14) as i32;
 
-        let x2 = (x_rad * x_rad) >> 15;
-        let x3 = (x2 * x_rad) >> 15;
-        let x5 = (((x3 * x2) >> 15) * x2) >> 15;
+        // le passage par i64 est vital
+        let x2 = ((x_rad as i64 * x_rad as i64) >> 15) as i32;
+        let x3 = ((x2 as i64 * x_rad as i64) >> 15) as i32;
+        let x5 = ((((x3 as i64 * x2 as i64) >> 15) as i64 * x2 as i64) >> 15) as i32;
 
-        let term3 = (x3 * 5461) >> 15;
-        let term5 = (x5 * 273) >> 15;
+        let term3 = ((x3 as i64 * 5461) >> 15) as i32;
+        let term5 = ((x5 as i64 * 273) >> 15) as i32;
 
-        // C'EST CETTE LIGNE QUI DOIT ÊTRE ICI :
         let res = (x_rad - term3 + term5) as Fixed;
-
         if angle > 32768 {
             -res
         } else {
