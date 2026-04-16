@@ -5,6 +5,7 @@
 // (at your option) any later version.
 
 #![no_std]
+#![forbid(unsafe_code)]
 
 //! # Fixed-Math-Taylor
 //!
